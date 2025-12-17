@@ -1,13 +1,14 @@
 // src/components/layout/AppLayout.jsx
-import { Layout, Menu, Typography } from "antd";
 import {
-  AppstoreOutlined,
   ClusterOutlined,
-  SettingOutlined,
-  UnorderedListOutlined,
   DashboardOutlined,
+  SettingOutlined,
+  UnorderedListOutlined
 } from "@ant-design/icons";
+import { Layout, Typography } from "antd";
 import { useLocation, useNavigate } from "react-router-dom";
+import AppFooter from "./AppFooter";
+import AppHeader from "./AppHeader";
 
 const { Header, Sider, Content } = Layout;
 const { Title } = Typography;
@@ -25,7 +26,7 @@ export default function AppLayout({ children }) {
 
   return (
     <Layout style={{ minHeight: "100vh" }}>
-      <Sider breakpoint="lg" collapsedWidth="0">
+      {/* <Sider breakpoint="lg" collapsedWidth="0">
         <div
           style={{
             height: 64,
@@ -47,32 +48,14 @@ export default function AppLayout({ children }) {
           selectedKeys={[getSelectedKey(location.pathname)]}
           onClick={(e) => navigate(e.key)}
         />
-      </Sider>
+      </Sider> */}
 
       <Layout>
-        <Header
-          style={{
-            background: "#fff",
-            padding: "0 24px",
-            display: "flex",
-            alignItems: "center",
-          }}
-        >
-          <Title level={4} style={{ margin: 0 }}>
-            Bill of Materials Manager
-          </Title>
-        </Header>
-
-        <Content
-          style={{
-            margin: "16px",
-            padding: 16,
-            background: "#fff",
-            borderRadius: 8,
-          }}
-        >
+        <AppHeader />
+        <Content style={{ margin: "16px", padding: 16, background: "#fff" }}>
           {children}
         </Content>
+        <AppFooter />
       </Layout>
     </Layout>
   );

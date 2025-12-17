@@ -17,6 +17,7 @@ export default defineConfig({
         start_url: "/",
         scope: "/",
         display: "standalone",
+        id: '/',
         icons: [
           {
             src: "pwa-192x192.png",
@@ -65,5 +66,6 @@ export default defineConfig({
         ],
       },
     }),
+    
   ],
 });
