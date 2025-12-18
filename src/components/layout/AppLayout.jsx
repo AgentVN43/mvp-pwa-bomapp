@@ -18,6 +18,7 @@ const menuItems = [
   { key: "/items", icon: <UnorderedListOutlined />, label: "Items" },
   { key: "/boms", icon: <ClusterOutlined />, label: "BOMs" },
   { key: "/settings", icon: <SettingOutlined />, label: "Settings" },
+  { key: "/test", icon: <SettingOutlined />, label: "Test" },
 ];
 
 export default function AppLayout({ children }) {

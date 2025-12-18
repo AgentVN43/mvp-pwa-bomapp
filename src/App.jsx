@@ -1,11 +1,14 @@
 import { Navigate, Route, Routes } from "react-router-dom";
+import "./App.css";
 import AppLayout from "./components/layout/AppLayout";
-import PWAUpdater from "./PWAUpdater";
+import BomDetailPage from "./pages/BomDetailPage";
+import BomListPage from "./pages/BomListPage";
 import DashboardPage from "./pages/DashboardPage";
 import ItemListPage from "./pages/ItemListPage";
-import BomListPage from "./pages/BomListPage";
-import BomDetailPage from "./pages/BomDetailPage";
-import "./App.css";
+import MaterialsScreen from "./pages/materials";
+import MaterialDetailScreen from "./pages/materials/detail";
+import ProductScreen from "./pages/products";
+import ProductDetailScreen from "./pages/products/detail";
 function App() {
   return (
     <>
@@ -13,10 +16,12 @@ function App() {
       <AppLayout>
         <Routes>
           <Route path="/" element={<DashboardPage />} />
-          <Route path="/items" element={<ItemListPage />} />
-          <Route path="/boms" element={<BomListPage />} />
-          <Route path="/boms/:bomId" element={<BomDetailPage />} />
-          <Route path="/management" element={<BomDetailPage />} />
+
+          <Route path="/material" element={<MaterialsScreen />} />
+          <Route path="/material/:id" element={<MaterialDetailScreen />} />
+
+          <Route path="/products" element={<ProductScreen />} />
+          <Route path="/products/:id" element={<ProductDetailScreen />} />
 
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>

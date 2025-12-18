@@ -3,6 +3,8 @@ import {
   AppstoreOutlined,
   ClusterOutlined,
   HomeOutlined,
+  ProductOutlined,
+  RestOutlined,
   SettingOutlined,
   StockOutlined,
 } from "@ant-design/icons";
@@ -12,11 +14,9 @@ import { NavLink } from "react-router-dom";
 const { Footer } = Layout;
 
 const navItems = [
-  { path: "/", label: "Dashboard", icon: HomeOutlined },
-  { path: "/items", label: "Items", icon: AppstoreOutlined },
-  { path: "/boms", label: "BOMs", icon: ClusterOutlined },
-  { path: "/management", label: "Management", icon: StockOutlined },
-  { path: "/settings", label: "Settings", icon: SettingOutlined },
+  { path: "/", label: "Home", icon: HomeOutlined },
+  { path: "/products", label: "Products", icon: ProductOutlined },
+  { path: "/material", label: "Materials", icon: RestOutlined },
 ];
 
 export default function AppFooter() {
