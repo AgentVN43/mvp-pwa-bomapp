@@ -18,7 +18,8 @@ export type ProductDetailCategory = {
 export type ProductDetail = {
   product_detail_id: string;
   product_id: string;
-  material_id: string;
+  material_id?: string | null;
+  component_product_id?: string | null;
   component_item_type: string;
   material_quantity: string | number;
   total_price?: string | number | null;
@@ -29,6 +30,7 @@ export type ProductDetail = {
   updated_user?: string | null;
   delete_flag?: boolean;
   product?: Product;
+  component_product?: Product | null;
   material?: Material;
   category?: ProductDetailCategory | null;
 };

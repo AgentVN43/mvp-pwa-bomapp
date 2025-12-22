@@ -7,6 +7,7 @@ export type Product = {
   product_price: string | null;
   version?: string | null;
   description?: string | null;
+  component_item_type?: "PRODUCT";
 };
 
 export type FlattenedBomLine = {

@@ -21,6 +21,7 @@ import { useProducts } from "../../hooks/materials/useProducts";
 import { useProductDetails } from "../../hooks/materials/useProductDetails";
 import { useProductDetailMutations } from "../../hooks/materials/useProductDetailMutations";
 import { useMaterials } from "../../hooks/materials/useMaterials";
+import { useProducts as useProductsList } from "../../hooks/materials/useProducts";
 import { useCategories } from "../../hooks/categories/useCategories";
 
 const { Text } = Typography;
@@ -59,6 +60,7 @@ export default function ProductDetailPage() {
     deletingProductDetail,
   } = useProductDetailMutations(id);
   const { materials } = useMaterials();
+  const { products: allProducts } = useProductsList();
   const { categories } = useCategories();
 
   const showSkeleton = productDetailLoading && !productDetail;
@@ -166,8 +168,24 @@ export default function ProductDetailPage() {
             <List
               dataSource={productDetails}
               locale={{ emptyText: "Chưa có định mức BOM" }}
-              renderItem={(detail) => (
-                <List.Item
+              renderItem={(detail) => {
+                const componentProductId =
+                  detail.component_product_id || detail.material_id;
+                console.log("[ProductDetailPage] detail line", {
+                  id: detail.product_detail_id,
+                  componentItemType: detail.component_item_type,
+                  materialId: detail.material_id,
+                  componentProductId,
+                });
+                const componentProduct =
+                  detail.component_item_type === "PRODUCT"
+                    ? detail.component_product ||
+                      allProducts.find(
+                        (product) => product.product_id === componentProductId
+                      )
+                    : null;
+                return (
+                  <List.Item
                   className="flex justify-between"
                   actions={[
                     <Button
@@ -178,7 +196,7 @@ export default function ProductDetailPage() {
                         setDrawerOpen(true);
                       }}
                     >
-                      Sửa
+                      S?a
                     </Button>,
                     <Popconfirm
                       key="delete"
@@ -191,7 +209,7 @@ export default function ProductDetailPage() {
                       }
                     >
                       <Button danger size="small">
-                        Xóa
+                        Xoá
                       </Button>
                     </Popconfirm>,
                   ]}
@@ -201,20 +219,30 @@ export default function ProductDetailPage() {
                       <div className="flex items-center justify-between">
                         <div>
                           <div className="font-semibold">
-                            {detail.material?.material_name ||
-                              detail.material_id}
+                            {detail.component_item_type === "PRODUCT"
+                              ? componentProduct?.product_name ||
+                                componentProductId ||
+                                detail.material_id
+                              : detail.material?.material_name ||
+                                detail.material_id}
                           </div>
                           <Text type="secondary">
-                            {detail.material?.description ||
-                              detail.category?.category_name ||
-                              detail.component_item_type}
+                            {detail.component_item_type === "PRODUCT"
+                              ? componentProduct?.description ||
+                                detail.category?.category_name ||
+                                "Product"
+                              : detail.material?.description ||
+                                detail.category?.category_name ||
+                                detail.component_item_type}
                           </Text>
                         </div>
                         <div className="text-right">
                           <Text strong>
                             {Number(detail.material_quantity).toLocaleString()}{" "}
-                            {detail.material?.unit ||
-                              detail.component_item_type}
+                            {detail.component_item_type === "PRODUCT"
+                              ? componentProduct?.unit || "unit"
+                              : detail.material?.unit ||
+                                detail.component_item_type}
                           </Text>
                           {detail.category?.category_name && (
                             <div>
@@ -228,7 +256,8 @@ export default function ProductDetailPage() {
                     }
                   />
                 </List.Item>
-              )}
+              );
+            }}
             />
           )}
         </Card>
@@ -304,6 +333,8 @@ export default function ProductDetailPage() {
         }
         materials={materials}
         categories={categories}
+        products={allProducts}
+        currentProductId={id}
       />
     </PageContainer>
   );
@@ -317,19 +348,35 @@ function ProductDetailFormModal({
   submitting,
   materials,
   categories,
+  products,
+  currentProductId,
 }) {
   const [form] = Form.useForm();
 
   useEffect(() => {
     if (open) {
       form.resetFields();
+      const resolvedMaterialId = detail?.material_id || undefined;
+      const resolvedComponentProductId =
+        detail?.component_product_id ||
+        detail?.component_product?.product_id ||
+        resolvedMaterialId;
+      console.log("[ProductDetailFormModal] init", {
+        detail,
+        resolvedComponentProductId,
+        materialId: resolvedMaterialId,
+      });
       form.setFieldsValue({
-        material_id: detail?.material_id || undefined,
+        component_item_type: detail?.component_item_type || "MATERIAL",
+        material_id: resolvedMaterialId,
+        component_product_id:
+          detail?.component_item_type === "PRODUCT"
+            ? resolvedComponentProductId
+            : undefined,
         category_id: detail?.category_id || undefined,
         material_quantity: detail?.material_quantity
           ? Number(detail.material_quantity)
           : 0,
-        component_item_type: detail?.component_item_type || "MATERIAL",
       });
     }
   }, [open, detail, form]);
@@ -337,7 +384,14 @@ function ProductDetailFormModal({
   const handleOk = async () => {
     try {
       const values = await form.validateFields();
-      await onSubmit(values);
+      const payload = { ...values };
+      if (payload.component_item_type === "PRODUCT") {
+        payload.material_id = payload.component_product_id;
+      } else {
+        payload.component_product_id = undefined;
+      }
+      console.log("[ProductDetailFormModal] submit payload", payload);
+      await onSubmit(payload);
       form.resetFields();
     } catch (error) {
       console.error(error);
@@ -355,23 +409,72 @@ function ProductDetailFormModal({
       cancelText="Hủy"
     >
       <Form layout="vertical" form={form}>
-        <Form.Item
-          name="material_id"
-          label="Vật liệu"
-          rules={[{ required: true, message: "Vui lòng chọn vật liệu" }]}
-        >
-          <Select
-            showSearch
-            placeholder="Chọn vật liệu"
-            options={materials.map((material) => ({
-              value: material.material_id,
-              label: material.material_name,
-            }))}
-            filterOption={(input, option) =>
-              (option?.label ?? "").toLowerCase().includes(input.toLowerCase())
-            }
-          />
+        <Form.Item name="component_item_type" label="Loại thành phần">
+          <Select>
+            <Select.Option value="MATERIAL">Vật liệu</Select.Option>
+            <Select.Option value="PRODUCT">Sản phẩm / bán thành phẩm</Select.Option>
+          </Select>
         </Form.Item>
+
+        <Form.Item shouldUpdate noStyle>
+          {({ getFieldValue }) => {
+            const type = getFieldValue("component_item_type");
+            if (type === "PRODUCT") {
+              return (
+                <Form.Item
+                  name="component_product_id"
+                  label="San pham / ban thanh pham"
+                  rules={[
+                    { required: true, message: "Vui long chon san pham" },
+                  ]}
+                >
+                  <Select
+                    showSearch
+                    placeholder="Chon san pham"
+                    options={products
+                      .filter(
+                        (product) => product.product_id !== currentProductId
+                      )
+                      .map((product) => ({
+                        value: product.product_id,
+                        label: product.product_name,
+                      }))}
+                    filterOption={(input, option) =>
+                      (option?.label ?? "")
+                        .toLowerCase()
+                        .includes(input.toLowerCase())
+                    }
+                  />
+                </Form.Item>
+              );
+            }
+
+            return (
+              <Form.Item
+                name="material_id"
+                label="Vat lieu"
+                rules={[
+                  { required: true, message: "Vui long chon vat lieu" },
+                ]}
+              >
+                <Select
+                  showSearch
+                  placeholder="Chon vat lieu"
+                  options={materials.map((material) => ({
+                    value: material.material_id,
+                    label: material.material_name,
+                  }))}
+                  filterOption={(input, option) =>
+                    (option?.label ?? "")
+                      .toLowerCase()
+                      .includes(input.toLowerCase())
+                  }
+                />
+              </Form.Item>
+            );
+          }}
+        </Form.Item>
+
         <Form.Item
           name="material_quantity"
           label="Định mức"
@@ -379,6 +482,7 @@ function ProductDetailFormModal({
         >
           <InputNumber min={0} className="w-full" />
         </Form.Item>
+
         <Form.Item name="category_id" label="Nhóm">
           <Select
             allowClear
@@ -388,9 +492,6 @@ function ProductDetailFormModal({
               label: category.category_name,
             }))}
           />
-        </Form.Item>
-        <Form.Item name="component_item_type" label="Loại thành phần">
-          <Input placeholder="MATERIAL hoặc SUB-ITEM..." />
         </Form.Item>
       </Form>
     </Modal>
