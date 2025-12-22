@@ -21,4 +21,6 @@ export const productService = {
   detail: (id: string) => http.get<Product>(endpoints.products.detail(id)),
   bomFlat: (id: string, qty = 1) =>
     http.get<FlattenedBomLine[]>(endpoints.products.bomFlat(id, qty)),
+  create: (payload: Omit<Product, "product_id">) =>
+    http.post<Product>(endpoints.products.list(), payload),
 };

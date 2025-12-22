@@ -5,7 +5,7 @@ import {
   productService,
 } from "../../api/services/product.service";
 
-const PRODUCTS_QUERY_KEY = ["products"];
+export const PRODUCTS_QUERY_KEY = ["products"];
 const productDetailKey = (id?: string) => [
   ...PRODUCTS_QUERY_KEY,
   "detail",

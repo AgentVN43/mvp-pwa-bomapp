@@ -40,4 +40,9 @@ export const productDetailService = {
       `${endpoints.productDetails.list()}?productId=${productId}`
     ),
   detail: (id: string) => http.get<ProductDetail>(endpoints.productDetails.detail(id)),
+  create: (payload: Partial<ProductDetail>) =>
+    http.post<ProductDetail>(endpoints.productDetails.list(), payload),
+  update: (id: string, payload: Partial<ProductDetail>) =>
+    http.put<ProductDetail>(endpoints.productDetails.detail(id), payload),
+  remove: (id: string) => http.del<void>(endpoints.productDetails.detail(id)),
 };

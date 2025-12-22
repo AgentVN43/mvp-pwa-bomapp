@@ -1,11 +1,17 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
   Alert,
   Button,
   Card,
   Descriptions,
+  Form,
+  Input,
   InputNumber,
   List,
+  Modal,
+  Popconfirm,
+  Select,
+  Space,
   Typography,
 } from "antd";
 import { useNavigate, useParams } from "react-router-dom";
@@ -13,6 +19,9 @@ import PageContainer from "../../components/layout/PageContainer";
 import PageSkeleton from "../../components/common/PageSkeleton";
 import { useProducts } from "../../hooks/materials/useProducts";
 import { useProductDetails } from "../../hooks/materials/useProductDetails";
+import { useProductDetailMutations } from "../../hooks/materials/useProductDetailMutations";
+import { useMaterials } from "../../hooks/materials/useMaterials";
+import { useCategories } from "../../hooks/categories/useCategories";
 
 const { Text } = Typography;
 
@@ -20,6 +29,8 @@ export default function ProductDetailPage() {
   const { id } = useParams();
   const navigate = useNavigate();
   const [quantity, setQuantity] = useState(1);
+  const [drawerOpen, setDrawerOpen] = useState(false);
+  const [editingDetail, setEditingDetail] = useState(null);
 
   const {
     productDetail,
@@ -39,6 +50,16 @@ export default function ProductDetailPage() {
     productDetailsError,
     refetchProductDetails,
   } = useProductDetails({ productId: id });
+  const {
+    createProductDetail,
+    updateProductDetail,
+    deleteProductDetail,
+    creatingProductDetail,
+    updatingProductDetail,
+    deletingProductDetail,
+  } = useProductDetailMutations(id);
+  const { materials } = useMaterials();
+  const { categories } = useCategories();
 
   const showSkeleton = productDetailLoading && !productDetail;
 
@@ -90,7 +111,9 @@ export default function ProductDetailPage() {
         <Alert
           type={productDetailError ? "error" : "info"}
           message={
-            productDetailError ? "Không thể tải sản phẩm" : "Không tìm thấy sản phẩm"
+            productDetailError
+              ? "Không thể tải sản phẩm"
+              : "Không tìm thấy sản phẩm"
           }
           description={
             productDetailError
@@ -105,12 +128,23 @@ export default function ProductDetailPage() {
           className="rounded-2xl"
           title="Định mức BOM (chuẩn)"
           extra={
-            <Button
-              onClick={() => refetchProductDetails()}
-              loading={productDetailsFetching}
-            >
-              Tải lại
-            </Button>
+            <Space>
+              <Button
+                onClick={() => refetchProductDetails()}
+                loading={productDetailsFetching}
+              >
+                Tải lại
+              </Button>
+              <Button
+                type="primary"
+                onClick={() => {
+                  setEditingDetail(null);
+                  setDrawerOpen(true);
+                }}
+              >
+                Thêm dòng BOM
+              </Button>
+            </Space>
           }
         >
           {productDetailsLoading && !productDetails.length ? (
@@ -123,10 +157,7 @@ export default function ProductDetailPage() {
                 productDetailsError?.message || productDetailsError
               )}
               action={
-                <Button
-                  size="small"
-                  onClick={() => refetchProductDetails()}
-                >
+                <Button size="small" onClick={() => refetchProductDetails()}>
                   Thử lại
                 </Button>
               }
@@ -136,30 +167,66 @@ export default function ProductDetailPage() {
               dataSource={productDetails}
               locale={{ emptyText: "Chưa có định mức BOM" }}
               renderItem={(detail) => (
-                <List.Item className="flex justify-between">
-                  <div>
-                    <div className="font-semibold">
-                      {detail.material?.material_name || detail.material_id}
-                    </div>
-                    <Text type="secondary">
-                      {detail.material?.description ||
-                        detail.category?.category_name ||
-                        detail.component_item_type}
-                    </Text>
-                  </div>
-                  <div className="text-right">
-                    <Text strong>
-                      {Number(detail.material_quantity).toLocaleString()}{" "}
-                      {detail.material?.unit || detail.component_item_type}
-                    </Text>
-                    {detail.category?.category_name && (
-                      <div>
-                        <Text type="secondary">
-                          {detail.category.category_name}
-                        </Text>
+                <List.Item
+                  className="flex justify-between"
+                  actions={[
+                    <Button
+                      key="edit"
+                      size="small"
+                      onClick={() => {
+                        setEditingDetail(detail);
+                        setDrawerOpen(true);
+                      }}
+                    >
+                      Sửa
+                    </Button>,
+                    <Popconfirm
+                      key="delete"
+                      title="Xóa dòng BOM?"
+                      okText="Xóa"
+                      cancelText="Hủy"
+                      okButtonProps={{ loading: deletingProductDetail }}
+                      onConfirm={() =>
+                        deleteProductDetail(detail.product_detail_id)
+                      }
+                    >
+                      <Button danger size="small">
+                        Xóa
+                      </Button>
+                    </Popconfirm>,
+                  ]}
+                >
+                  <List.Item.Meta
+                    title={
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <div className="font-semibold">
+                            {detail.material?.material_name ||
+                              detail.material_id}
+                          </div>
+                          <Text type="secondary">
+                            {detail.material?.description ||
+                              detail.category?.category_name ||
+                              detail.component_item_type}
+                          </Text>
+                        </div>
+                        <div className="text-right">
+                          <Text strong>
+                            {Number(detail.material_quantity).toLocaleString()}{" "}
+                            {detail.material?.unit ||
+                              detail.component_item_type}
+                          </Text>
+                          {detail.category?.category_name && (
+                            <div>
+                              <Text type="secondary">
+                                {detail.category.category_name}
+                              </Text>
+                            </div>
+                          )}
+                        </div>
                       </div>
-                    )}
-                  </div>
+                    }
+                  />
                 </List.Item>
               )}
             />
@@ -167,7 +234,7 @@ export default function ProductDetailPage() {
         </Card>
       )}
 
-      {productDetail && (
+      {/* {productDetail && (
         <Card
           className="rounded-2xl"
           title="Định mức BOM"
@@ -212,7 +279,120 @@ export default function ProductDetailPage() {
             />
           )}
         </Card>
-      )}
+      )} */}
+      <ProductDetailFormModal
+        open={drawerOpen}
+        onClose={() => {
+          setDrawerOpen(false);
+          setEditingDetail(null);
+        }}
+        detail={editingDetail}
+        onSubmit={async (values) => {
+          if (editingDetail) {
+            await updateProductDetail({
+              id: editingDetail.product_detail_id,
+              payload: { ...values, product_id: id },
+            });
+          } else {
+            await createProductDetail({ ...values, product_id: id });
+          }
+          setDrawerOpen(false);
+          setEditingDetail(null);
+        }}
+        submitting={
+          editingDetail ? updatingProductDetail : creatingProductDetail
+        }
+        materials={materials}
+        categories={categories}
+      />
     </PageContainer>
+  );
+}
+
+function ProductDetailFormModal({
+  open,
+  onClose,
+  detail,
+  onSubmit,
+  submitting,
+  materials,
+  categories,
+}) {
+  const [form] = Form.useForm();
+
+  useEffect(() => {
+    if (open) {
+      form.resetFields();
+      form.setFieldsValue({
+        material_id: detail?.material_id || undefined,
+        category_id: detail?.category_id || undefined,
+        material_quantity: detail?.material_quantity
+          ? Number(detail.material_quantity)
+          : 0,
+        component_item_type: detail?.component_item_type || "MATERIAL",
+      });
+    }
+  }, [open, detail, form]);
+
+  const handleOk = async () => {
+    try {
+      const values = await form.validateFields();
+      await onSubmit(values);
+      form.resetFields();
+    } catch (error) {
+      console.error(error);
+    }
+  };
+
+  return (
+    <Modal
+      title={detail ? "Chỉnh sửa BOM line" : "Thêm dòng BOM"}
+      open={open}
+      onCancel={onClose}
+      onOk={handleOk}
+      confirmLoading={submitting}
+      okText="Lưu"
+      cancelText="Hủy"
+    >
+      <Form layout="vertical" form={form}>
+        <Form.Item
+          name="material_id"
+          label="Vật liệu"
+          rules={[{ required: true, message: "Vui lòng chọn vật liệu" }]}
+        >
+          <Select
+            showSearch
+            placeholder="Chọn vật liệu"
+            options={materials.map((material) => ({
+              value: material.material_id,
+              label: material.material_name,
+            }))}
+            filterOption={(input, option) =>
+              (option?.label ?? "").toLowerCase().includes(input.toLowerCase())
+            }
+          />
+        </Form.Item>
+        <Form.Item
+          name="material_quantity"
+          label="Định mức"
+          rules={[{ required: true, message: "Vui lòng nhập định mức" }]}
+        >
+          <InputNumber min={0} className="w-full" />
+        </Form.Item>
+        <Form.Item name="category_id" label="Nhóm">
+          <Select
+            allowClear
+            placeholder="Chọn nhóm"
+            options={categories.map((category) => ({
+              value: category.category_id,
+              label: category.category_name,
+            }))}
+          />
+        </Form.Item>
+        <Form.Item name="component_item_type" label="Loại thành phần">
+          <Input placeholder="MATERIAL hoặc SUB-ITEM..." />
+        </Form.Item>
+      </Form>
+    </Modal>
   );
 }

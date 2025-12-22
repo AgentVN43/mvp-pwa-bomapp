@@ -1,9 +1,20 @@
 import { useMemo, useState } from "react";
-import { Button, List, Tag, Typography } from "antd";
+import {
+  Button,
+  Form,
+  Input,
+  InputNumber,
+  List,
+  Modal,
+  Space,
+  Tag,
+  Typography,
+} from "antd";
 import { useNavigate } from "react-router-dom";
 import PageContainer from "../../components/layout/PageContainer";
 import ItemListPage from "../ItemListPage";
 import { useProducts } from "../../hooks/materials/useProducts";
+import { useProductMutations } from "../../hooks/materials/useProductMutations";
 
 const { Text } = Typography;
 
@@ -16,8 +27,11 @@ export default function ProductsPage() {
     productsError,
     refetchProducts,
   } = useProducts();
+  const { createProduct, creatingProduct } = useProductMutations();
+  const [form] = Form.useForm();
 
   const [search, setSearch] = useState("");
+  const [productModalOpen, setProductModalOpen] = useState(false);
 
   const filteredProducts = useMemo(() => {
     const keyword = search.trim().toLowerCase();
@@ -29,10 +43,37 @@ export default function ProductsPage() {
     });
   }, [products, search]);
 
+  const handleCreateProduct = async () => {
+    try {
+      const values = await form.validateFields();
+      await createProduct({
+        product_name: values.product_name,
+        product_price: values.product_price
+          ? String(values.product_price)
+          : null,
+        version: values.version || null,
+        description: values.description || null,
+      });
+      form.resetFields();
+      setProductModalOpen(false);
+    } catch (error) {
+      console.error(error);
+    }
+  };
+
   return (
-    <PageContainer title="PRODUCTS" subtitle="Danh sách sản phẩm">
+    <PageContainer
+      title="Danh sách sản phẩm"
+      subtitle="Danh sách sản phẩm"
+      extra={
+        <Space>
+          <Button type="primary" onClick={() => setProductModalOpen(true)}>
+            Thêm sản phẩm
+          </Button>
+        </Space>
+      }
+    >
       <ItemListPage
-        title="Danh sách sản phẩm"
         onReload={refetchProducts}
         reloading={productsFetching}
         searchValue={search}
@@ -42,11 +83,6 @@ export default function ProductsPage() {
         hasData={products.length > 0}
         isError={Boolean(productsError)}
         error={productsError}
-        actions={
-          <Button type="default" onClick={() => navigate("/material")}>
-            Quản lý nguyên liệu
-          </Button>
-        }
       >
         <List
           itemLayout="vertical"
@@ -61,7 +97,9 @@ export default function ProductsPage() {
               <List.Item.Meta
                 title={
                   <div className="flex items-center gap-2">
-                    <span className="font-semibold">{product.product_name}</span>
+                    <span className="font-semibold">
+                      {product.product_name}
+                    </span>
                     {product.version && <Tag>{product.version}</Tag>}
                   </div>
                 }
@@ -83,6 +121,35 @@ export default function ProductsPage() {
           )}
         />
       </ItemListPage>
+
+      <Modal
+        title="Thêm sản phẩm"
+        open={productModalOpen}
+        onCancel={() => setProductModalOpen(false)}
+        onOk={handleCreateProduct}
+        confirmLoading={creatingProduct}
+        okText="Lưu"
+        cancelText="Hủy"
+      >
+        <Form layout="vertical" form={form}>
+          <Form.Item
+            name="product_name"
+            label="Tên sản phẩm"
+            rules={[{ required: true, message: "Vui lòng nhập tên sản phẩm" }]}
+          >
+            <Input placeholder="Ví dụ: Bún bò Huế đặc biệt" />
+          </Form.Item>
+          <Form.Item name="product_price" label="Giá bán">
+            <InputNumber min={0} className="w-full" />
+          </Form.Item>
+          <Form.Item name="version" label="Phiên bản">
+            <Input placeholder="Ví dụ: 1.0" />
+          </Form.Item>
+          <Form.Item name="description" label="Mô tả">
+            <Input.TextArea rows={3} placeholder="Thông tin mô tả..." />
+          </Form.Item>
+        </Form>
+      </Modal>
     </PageContainer>
   );
 }

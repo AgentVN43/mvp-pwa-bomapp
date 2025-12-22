@@ -13,6 +13,10 @@ export const endpoints = {
     list: () => `/product-details`,
     detail: (id: string) => `/product-details/${id}`,
   },
+  categories: {
+    list: () => `/categories`,
+    detail: (id: string) => `/categories/${id}`,
+  },
   inventory: {
     list: () => `/inventory`,
     detail: (id: string) => `/inventory/${id}`,
